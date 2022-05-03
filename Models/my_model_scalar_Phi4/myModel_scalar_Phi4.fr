@@ -1,0 +1,104 @@
+(****************************************)
+(****************************************)
+(****** scalar phi4 theory ******)
+(******                            ******)
+(****** Authors: Fucheng Zhong  ******)
+(****************************************)
+(****************************************)
+
+(*** Model named and the related infomation ***)
+M$ModelName = "my_Model"; 
+M$Information = {
+                  Authors -> {"Fucheng,Zhong"}
+                  Institutions -> {"SYSU"}
+                  Emails -> {"zhongfch@mail2.sysu.edu.cn"}
+                  Date -> {"May 1st, 2022"}
+                  References -> {"arxiv: 1310.1921"}
+                };
+
+
+(*** index declarations ***)
+IndexRange[ Index[Scalar] ] = Range[2]; (*** index name (chosen freely) and range ***)
+IndexStyle[ Scalar, i]; (*** index type (scalar) and printed symbols (i) ***)
+
+(*** Parameters declarations ***)
+M$Parameters = {
+        (*** External parameters declarations ***)
+        lam == {(*** lambda matrix, real scalar and external ***)
+              ParameterType -> External,
+              ComplexParameter -> False,
+              Indices -> {Index[Scalar], Index[Scalar]}, Value -> {lam[1,1] -> 0.9,
+                                          lam[1,2] -> 0.1,
+                                          lam[2,1] -> 0.1,
+                                          lam[2,2] -> 0.9},
+            Description -> "Scalar quartic coupling matrix" },
+        MM == {  (*** mass matrix, real scalar and external ***)
+            ParameterType -> External,
+            ComplexParameter -> False,
+            Indices -> {Index[Scalar], Index[Scalar]}, 
+            Value -> {  MM[1,1] -> 100^2,
+                        MM[1,2] ->  10^2/2,
+                        MM[2,1] ->  10^2/2,
+                        MM[2,2] ->  200^2},
+            Description -> "Mass matrix"},
+
+        (*** Internal parameters declarations ***)
+        M1 == {
+              ParameterType -> Internal,
+              ComplexParameter -> False,
+              Value -> Sqrt[1/2 (MM[1, 1] + MM[2, 2] - Sqrt[(MM[1,1]-MM[2,2])^2+4 MM[1,2]^2])],
+              Description -> "Small mass eigenvalue"
+              },
+        
+        M2 == { 
+              ParameterType -> Internal,
+              ComplexParameter -> False,
+              Value -> Sqrt[1/2 (MM[1, 1] + MM[2, 2] + Sqrt[(MM[1,1]-MM[2,2])^2+4 MM[1,2]^2])],
+              Description -> "Large mass eigenvalue"
+              },
+        
+        sinth == { (*** Mixing ***)
+              ParameterType -> Internal, 
+              ComplexParameter -> False,
+              Value -> 2 MM[1,2]/Sqrt[4 MM[1,2]^2 + (MM[1,1]-MM[2,2] + Sqrt[(MM[1,1]-MM[2,2])^2+ 4 MM[1,2]^2])^2],
+              Description -> "Sine of the mixing angle"
+              },
+
+        UU == {
+              ParameterType -> Internal,
+              ComplexParameter -> False,
+              Indices -> {Index[Scalar], Index[Scalar]},
+              Value -> {UU[1,1] -> -sinth,
+                        UU[1,2] -> Sqrt[1-sinth^2],
+                        UU[2,1] -> Sqrt[1-sinth^2],
+                        UU[2,2] -> sinth},
+              Description -> "Mixing matrix"
+              }
+};
+
+
+(*** fields declarations ***)
+M$ClassesDescription = {
+              S[1] == { (*** Define Phi field as Scalar, in Mass basis ***)
+                        ClassName -> Phi, 
+                        ClassMembers -> {Phi1, Phi2},
+                        SelfConjugate -> False, (*** No self-conjugate for Scalar(automatically defined by Phibar) ***)
+                        Indices -> {Index[Scalar]},
+                        FlavorIndex -> Scalar,
+                        Mass -> {{M1, Internal}, {M2, Internal}} (*** M1,M2 already defined before ***)
+                      },
+
+              S[2] == { (*** Define Phi field as Scalar, in gauge basis ***)
+                        ClassName -> phi,
+                        ClassMembers -> {phi1, phi2},
+                        SelfConjugate -> False,
+                        Indices -> {Index[Scalar]},
+                        FlavorIndex -> Scalar,
+                        Unphysical -> True, (*** gauge eigenstates, not relate to Feynman diagram calculators ***)
+                        Definitions -> {phi[i_] :> Module[{j}, UU[i,j] Phi[j]]} (*** replacement rule that rotates the gauge basis to the mass basis. ***)
+                        }
+}
+
+(*** The Lagrangian, expressed by the simbol defined before ***)
+Lscal = del[phibar[i], mu] del[phi[i], mu] - phibar[i] MM[i,j] phi[j] + (phibar[i1] lam[i1, i2] phi[i2]) * (phibar[j1] lam[j1, j2] phi[j2])
+
